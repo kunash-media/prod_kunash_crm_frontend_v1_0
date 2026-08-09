@@ -15,10 +15,10 @@ import {
   FileText, FileX2, Loader2, MessageCircle, Send,
 } from "lucide-react";
 
-const API_BASE = "http://localhost:9090/api/lead/v1";
-const FILE_ORIGIN = "http://localhost:9090";
-const STAT_API_BASE = "http://localhost:9090/api/stat/v1";
-const STAFF_API_BASE = "http://localhost:9090/api/v1/staff";
+const API_BASE = "https://crm-api.kunashshowcase.online/api/lead/v1";
+const FILE_ORIGIN = "https://crm-api.kunashshowcase.online";
+const STAT_API_BASE = "https://crm-api.kunashshowcase.online/api/stat/v1";
+const STAFF_API_BASE = "https://crm-api.kunashshowcase.online/api/v1/staff";
 
 async function apiGetAbsolute(url) {
   const res = await fetch(url);
@@ -1068,7 +1068,7 @@ const BulkEmailOverlay = ({ count, onClose, onSend }) => (
 
 /* ── OVERLAY: Bulk WhatsApp forward — pick a template first, then send ── */
 
-const CALENDAR_API_BASE = "http://localhost:9090/api/calendar/v1";
+const CALENDAR_API_BASE = "https://crm-api.kunashshowcase.online/api/calendar/v1";
 
 /* Calls the backend, which creates a real Google Calendar event with Meet
    conferencing attached (via the connected Google account) and returns the
@@ -1625,7 +1625,7 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
   };
 
   /* ── Convert + celebration (confetti + clap sound) ── */
-  const CLIENT_API_BASE = "http://localhost:9090/api/client/v1";
+  const CLIENT_API_BASE = "https://crm-api.kunashshowcase.online/api/client/v1";
 
   const handleConvertConfirm = async (lead, amounts) => {
     setBusyId(lead.leadPrimeId);

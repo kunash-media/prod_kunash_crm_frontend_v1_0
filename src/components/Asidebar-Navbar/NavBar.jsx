@@ -18,8 +18,8 @@ const ROUTE_META = {
   "/settings":    { label: "Settings",    parent: "Dashboard" },
 };
 
-const API_BASE = "http://localhost:9090/api/lead/v1";
-const FILE_ORIGIN = "http://localhost:9090";
+const API_BASE = "https://crm-api.kunashshowcase.online/api/lead/v1";
+const FILE_ORIGIN = "https://crm-api.kunashshowcase.online";
 
 const NotificationPanel = ({ onClose }) => {
   const ref = useRef(null);

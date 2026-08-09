@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const API_BASE = "http://localhost:9090/api/lead/v1"; // adjust if your backend runs on a different origin, e.g. http://localhost:8080/api/lead/v1
+const API_BASE = "https://crm-api.kunashshowcase.online/api/lead/v1"; // adjust if your backend runs on a different origin, e.g. http://localhost:8080/api/lead/v1
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -78,7 +78,7 @@ const AddLead = () => {
 
 
    useEffect(() => {
-    fetch("http://localhost:9090/api/v1/staff/dropdown")
+    fetch("https://crm-api.kunashshowcase.online/api/v1/staff/dropdown")
       .then(res => res.json())
       .then(data => setStaffList(data))
       .catch(err => console.error("Failed to load staff dropdown:", err));

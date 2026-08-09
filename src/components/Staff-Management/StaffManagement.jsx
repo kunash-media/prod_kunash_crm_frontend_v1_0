@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const API_STAFF = "http://localhost:9090/api/v1/staff";
-const API_LEAD = "http://localhost:9090/api/lead/v1";
+const API_STAFF = "https://crm-api.kunashshowcase.online/api/v1/staff";
+const API_LEAD = "https://crm-api.kunashshowcase.online/api/lead/v1";
 
 const EMPTY_FORM = {
   staffFirstName: "",

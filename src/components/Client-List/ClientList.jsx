@@ -3,7 +3,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../Client-List/ClientList.css";
 
-const API_BASE = "http://localhost:9090/api/client/v1";
+const API_BASE = "https://crm-api.kunashshowcase.online/api/client/v1";
 
 const EMPTY_CLIENT = {
   firstName: "", lastName: "", contact: "", email: "",

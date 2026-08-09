@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:9090/api/admin";
+const BASE_URL = "https://crm-api.kunashshowcase.online/api/admin";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
