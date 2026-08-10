@@ -566,14 +566,14 @@ const exportBulkResultToWord = () => {
 
               <div className="fg">
                 <label>Assign Staff</label>
-                <select
+                    <select
                   name="assignedStaffId"
                   value={form.assignedStaffId}
                   onChange={handleChange}
                   disabled={isSaving}
                 >
                   <option value="">Unassigned</option>
-                  {staffList.map(s => (
+                  {Array.isArray(staffList) && staffList.map(s => (
                     <option key={s.staffPrimeId} value={s.staffPrimeId}>
                       {s.staffFirstName} {s.staffLastName} ({s.staffRole})
                     </option>
