@@ -304,8 +304,8 @@ const exportBulkResultToWord = () => {
   const validate = () => {
     const err = {};
     if (!form.firstName.trim()) err.firstName = "First name is required";
-    if (!form.lastName.trim()) err.lastName = "Last name is required";
-    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) err.email = "Valid email is required";
+    // if (!form.lastName.trim()) err.lastName = "Last name is required";
+    // if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) err.email = "Valid email is required";
     
    if (!form.phone.trim()) {
       err.phone = "Phone number is required";
@@ -442,7 +442,7 @@ const exportBulkResultToWord = () => {
               </div>
 
               <div className="fg">
-                <label>Last Name <span className="required">*</span></label>
+                <label>Last Name</label>
                 <input
                   type="text"
                   name="lastName"
@@ -452,11 +452,11 @@ const exportBulkResultToWord = () => {
                   className={errors.lastName ? "error" : ""}
                   disabled={isSaving}
                 />
-                {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
+                {/* {errors.lastName && <span className="error-msg">{errors.lastName}</span>} */}
               </div>
 
               <div className="fg">
-                <label>Email Address <span className="required">*</span></label>
+                <label>Email Address</label>
                 <input
                   type="email"
                   name="email"
@@ -466,7 +466,7 @@ const exportBulkResultToWord = () => {
                   className={errors.email ? "error" : ""}
                   disabled={isSaving}
                 />
-                {errors.email && <span className="error-msg">{errors.email}</span>}
+                {/* {errors.email && <span className="error-msg">{errors.email}</span>} */}
               </div>
 
               <div className="fg">

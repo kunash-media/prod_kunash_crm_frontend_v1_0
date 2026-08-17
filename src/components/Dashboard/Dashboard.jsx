@@ -767,8 +767,8 @@ const LeadFormModal = ({ date, lead, staffList, onClose, onSave, saving }) => {
 const validate = () => {
     const e = {};
     if (!form.firstName.trim()) e.firstName = "First name is required";
-    if (!form.lastName.trim())  e.lastName  = "Last name is required";
-    if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Valid email required";
+    // if (!form.lastName.trim())  e.lastName  = "Last name is required";
+    // if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Valid email required";
     if (!/^[6-9]\d{9}$/.test((form.phone||"").replace(/\D/g,""))) e.phone = "Valid 10-digit mobile required";
 if (phoneCheck.checked && phoneCheck.exists) {
       e.phone = `Already exists: ${phoneCheck.firstName || ""} ${phoneCheck.lastName || ""} (${phoneCheck.leadStrId || "ID " + phoneCheck.leadPrimeId})`;
@@ -799,14 +799,14 @@ if (phoneCheck.checked && phoneCheck.exists) {
             {errs.firstName && <span className="fe-msg">{errs.firstName}</span>}
           </div>
           <div className="fg">
-            <label>Last Name *</label>
+            <label>Last Name </label>
             <input value={form.lastName} placeholder="Mehta" className={errs.lastName ? "fe" : ""} disabled={saving} onChange={(e) => set("lastName", e.target.value)} />
-            {errs.lastName && <span className="fe-msg">{errs.lastName}</span>}
+            {/* {errs.lastName && <span className="fe-msg">{errs.lastName}</span>} */}
           </div>
           <div className="fg">
-            <label>Email *</label>
+            <label>Email </label>
             <input type="email" value={form.email} placeholder="arjun@company.com" className={errs.email ? "fe" : ""} disabled={saving} onChange={(e) => set("email", e.target.value)} />
-            {errs.email && <span className="fe-msg">{errs.email}</span>}
+            {/* {errs.email && <span className="fe-msg">{errs.email}</span>} */}
           </div>
           <div className="fg">
             <label>Phone *</label>
@@ -1476,7 +1476,7 @@ const visibleLeads = useMemo(
 
   const nextFollowupLeads = useMemo(() =>
     visibleLeads.filter((l) =>
-      (l.followupCount || 0) > 1 &&
+      (l.followupCount || 0) >= 1 &&
       (stFilter === "all" || l.status === stFilter) &&
       matchesStaffFilter(l) &&
       [l.firstName, l.lastName, l.email, l.company || ""].some((f) => (f||"").toLowerCase().includes(search.toLowerCase()))
