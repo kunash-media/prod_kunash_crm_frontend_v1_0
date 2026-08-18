@@ -55,10 +55,25 @@ const WORK_TYPE_CFG = {
 
 const REQUIREMENT_CATEGORIES = [
   "Website Design","Ecommerce Website","Dynamic Website","Landing Page",
-  "Google Ads","Meta Ads","LinkedIn Marketing","SEO","Social Media Marketing",
+  "Google Ads","Meta Ads", "Linkedln Marketing (organically)",
+  "Linkedln Marketing (paid adds)","SEO","Social Media Marketing",
   "Graphic Design","Software Development","Mobile App","HRMS","CRM",
   "Custom Development","Other",
 ];
+
+const LEAD_SOURCES = [
+  "Website", "Referral", "Cold Call", 
+  "LinkedIn", "Event", "WhatsApp", 
+  "Inbound Email", "Other","Meta Adds"
+];
+
+const MEETING_TYPES = [
+  { value: "in_office", label: "In-Office" },
+  { value: "online", label: "Online" },
+  { value: "phone_call", label: "Phone Call" },
+  { value: "client_visit", label: "Client Visit" },
+];
+
 
 /* Deterministic hash → dark HSL color (dummy chart use) */
 const colorForKey = (key) => {
@@ -111,7 +126,7 @@ const rel = (offset) => {
 const EMPTY_FORM = {
   firstName:"", lastName:"", email:"", phone:"", company:"",
   status:"warm", priority:"P2", notes:"", followUpDate:"", followupStatus:"pending",
-  requirementCategory: REQUIREMENT_CATEGORIES[0], source:"Website", tags:"",
+  requirementCategory: [], source:"Website", tags:"",
   assignedStaffId: "",
 };
 
@@ -417,8 +432,7 @@ const DoughnutChart = ({ counts }) => {
 /* ─────────────────────────────────────────────────────────────
    OVERLAY: Day leads table
 ───────────────────────────────────────────────────────────── */
-const DayLeadsOverlay = ({ date, leads, onClose, onView, onEdit, onDone, onNextFollowup, onHistory, onDoc, busyId }) => (
-  <OverlayShell onClose={onClose} className="mo-wide">
+const DayLeadsOverlay = ({ date, leads, onClose, onView, onEdit, onDone, onNextFollowup, onHistory, onDoc, onAssignStaff, busyId }) => (  <OverlayShell onClose={onClose} className="mo-wide">
     <div className="mo-head">
       <div>
         <p className="mo-sub">{fmtDate(date).toUpperCase()}</p>
@@ -433,7 +447,7 @@ const DayLeadsOverlay = ({ date, leads, onClose, onView, onEdit, onDone, onNextF
             <tr className="sticky top-0">
               <th>First Name</th><th>Last Name</th><th>Mobile</th><th>Company</th>
               <th>Requirement</th><th>Priority</th><th>Follow-up Date</th><th>Note</th>
-              <th>Status</th><th className="action-th">Actions</th>
+              <th>Status</th><th>Assigned</th><th className="action-th">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -448,10 +462,12 @@ const DayLeadsOverlay = ({ date, leads, onClose, onView, onEdit, onDone, onNextF
                 <td>{fmtDate(l.followUpDate)}</td>
                 <td className="td-note">{(l.notes || "—").slice(0, 40)}</td>
                 <td><FollowupStatusPill status={l.followupStatus} /></td>
+                <td className="td-co">{l.assignedStaffName || "Unassigned"}</td>
                 <td className="action-th">
                   <ActionRow lead={l} busyId={busyId}
                     onView={onView} onEdit={onEdit} onDone={onDone}
-                    onNextFollowup={onNextFollowup} onHistory={onHistory} onDoc={onDoc} />
+                    onNextFollowup={onNextFollowup} onHistory={onHistory} onDoc={onDoc}
+                    onAssignStaff={onAssignStaff} />
                 </td>
               </tr>
             ))}
@@ -464,12 +480,18 @@ const DayLeadsOverlay = ({ date, leads, onClose, onView, onEdit, onDone, onNextF
 );
 
 /* ── OVERLAY: Mark as done ── */
-const DoneOverlay = ({ lead, onClose, onSubmit, saving }) => {
+const DoneOverlay = ({ lead, staffList, onClose, onSubmit, saving }) => {
   const [note, setNote] = useState("");
-  const [err, setErr] = useState("");
+  const [takenByStaffId, setTakenByStaffId] = useState("");
+  const [meetingType, setMeetingType] = useState("");
+  const [errs, setErrs] = useState({});
   const submit = () => {
-    if (!note.trim()) { setErr("Please add a note before submitting"); return; }
-    onSubmit(lead, note.trim());
+    const e = {};
+    if (!note.trim()) e.note = "Please add a note before submitting";
+    if (!takenByStaffId) e.staff = "Please select who took this follow-up";
+    if (!meetingType) e.meetingType = "Please select a meeting type";
+    if (Object.keys(e).length) { setErrs(e); return; }
+    onSubmit(lead, note.trim(), Number(takenByStaffId), meetingType);
   };
   return (
     <OverlayShell onClose={onClose}>
@@ -481,8 +503,30 @@ const DoneOverlay = ({ lead, onClose, onSubmit, saving }) => {
         <div className="fg">
           <label>Follow-up Note *</label>
           <textarea rows={4} placeholder="What happened on this call/meeting?"
-            value={note} onChange={(e) => { setNote(e.target.value); setErr(""); }} className={err ? "fe" : ""} disabled={saving} />
-          {err && <span className="fe-msg">{err}</span>}
+            value={note} onChange={(e) => { setNote(e.target.value); setErrs((p)=>({...p,note:undefined})); }} className={errs.note ? "fe" : ""} disabled={saving} />
+          {errs.note && <span className="fe-msg">{errs.note}</span>}
+        </div>
+        <div className="fg">
+          <label>Taken By *</label>
+          <select value={takenByStaffId} disabled={saving} className={errs.staff ? "fe" : ""}
+            onChange={(e) => { setTakenByStaffId(e.target.value); setErrs((p)=>({...p,staff:undefined})); }}>
+            <option value="">Select staff</option>
+            {(staffList || []).map((s) => (
+              <option key={s.staffPrimeId} value={s.staffPrimeId}>
+                {s.staffFirstName} {s.staffLastName} ({s.staffRole})
+              </option>
+            ))}
+          </select>
+          {errs.staff && <span className="fe-msg">{errs.staff}</span>}
+        </div>
+        <div className="fg">
+          <label>Meeting Type *</label>
+          <select value={meetingType} disabled={saving} className={errs.meetingType ? "fe" : ""}
+            onChange={(e) => { setMeetingType(e.target.value); setErrs((p)=>({...p,meetingType:undefined})); }}>
+            <option value="">Select type</option>
+            {MEETING_TYPES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+          {errs.meetingType && <span className="fe-msg">{errs.meetingType}</span>}
         </div>
       </div>
       <div className="mo-foot">
@@ -494,6 +538,7 @@ const DoneOverlay = ({ lead, onClose, onSubmit, saving }) => {
     </OverlayShell>
   );
 };
+
 
 /* ── OVERLAY: Mark as lost ── */
 const LostOverlay = ({ lead, onClose, onSubmit, saving }) => {
@@ -588,12 +633,18 @@ const AssignStaffOverlay = ({ lead, staffList, onClose, onSubmit, saving }) => {
 };
 
 /* ── OVERLAY: Next follow-up ── */
-const NextFollowupOverlay = ({ lead, onClose, onSubmit, saving }) => {
+const NextFollowupOverlay = ({ lead, staffList, onClose, onSubmit, saving }) => {
   const [date, setDate] = useState("");
-  const [err, setErr] = useState("");
+  const [takenByStaffId, setTakenByStaffId] = useState("");
+  const [meetingType, setMeetingType] = useState("");
+  const [errs, setErrs] = useState({});
   const submit = () => {
-    if (!date) { setErr("Pick a follow-up date"); return; }
-    onSubmit(lead, date);
+    const e = {};
+    if (!date) e.date = "Pick a follow-up date";
+    if (!takenByStaffId) e.staff = "Please select who scheduled this follow-up";
+    if (!meetingType) e.meetingType = "Please select a meeting type";
+    if (Object.keys(e).length) { setErrs(e); return; }
+    onSubmit(lead, date, Number(takenByStaffId), meetingType);
   };
   return (
     <OverlayShell onClose={onClose}>
@@ -604,9 +655,31 @@ const NextFollowupOverlay = ({ lead, onClose, onSubmit, saving }) => {
       <div className="mo-body">
         <div className="fg">
           <label>Next Follow-up Date *</label>
-          <input type="date" value={date} className={err ? "fe" : ""} disabled={saving}
-            onChange={(e) => { setDate(e.target.value); setErr(""); }} />
-          {err && <span className="fe-msg">{err}</span>}
+          <input type="date" value={date} className={errs.date ? "fe" : ""} disabled={saving}
+            onChange={(e) => { setDate(e.target.value); setErrs((p)=>({...p,date:undefined})); }} />
+          {errs.date && <span className="fe-msg">{errs.date}</span>}
+        </div>
+        <div className="fg">
+          <label>Taken By *</label>
+          <select value={takenByStaffId} disabled={saving} className={errs.staff ? "fe" : ""}
+            onChange={(e) => { setTakenByStaffId(e.target.value); setErrs((p)=>({...p,staff:undefined})); }}>
+            <option value="">Select staff</option>
+            {(staffList || []).map((s) => (
+              <option key={s.staffPrimeId} value={s.staffPrimeId}>
+                {s.staffFirstName} {s.staffLastName} ({s.staffRole})
+              </option>
+            ))}
+          </select>
+          {errs.staff && <span className="fe-msg">{errs.staff}</span>}
+        </div>
+        <div className="fg">
+          <label>Meeting Type *</label>
+          <select value={meetingType} disabled={saving} className={errs.meetingType ? "fe" : ""}
+            onChange={(e) => { setMeetingType(e.target.value); setErrs((p)=>({...p,meetingType:undefined})); }}>
+            <option value="">Select type</option>
+            {MEETING_TYPES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+          {errs.meetingType && <span className="fe-msg">{errs.meetingType}</span>}
         </div>
       </div>
       <div className="mo-foot">
@@ -618,6 +691,7 @@ const NextFollowupOverlay = ({ lead, onClose, onSubmit, saving }) => {
     </OverlayShell>
   );
 };
+
 
 /* ── OVERLAY: History ── */
 const HistoryOverlay = ({ lead, history, loading, onClose }) => (
@@ -645,7 +719,11 @@ const HistoryOverlay = ({ lead, history, loading, onClose }) => (
                   <span className="hist-tag">{h.followupStatus === "done" ? "Completed" : "Scheduled"}</span>
                 </div>
                 <p className="hist-note">{h.followupNotes || "—"}</p>
-                <p className="hist-at">Logged {fmtDateTime(h.createdAt)}</p>
+                <p className="hist-at">
+                  Logged {fmtDateTime(h.createdAt)}
+                  {h.takenByStaffName && ` · Taken by ${h.takenByStaffName}`}
+                  {h.meetingType && ` · ${MEETING_TYPES.find(m => m.value === h.meetingType)?.label || h.meetingType}`}
+                </p>
               </div>
             </div>
           ))}
@@ -677,7 +755,20 @@ const LeadDetailOverlay = ({ lead, onClose, onDoc }) => (
       <div className="vg-section">
         <p className="vg-section-title">Lead Details</p>
         <div className="vg-grid">
-          <div className="vg-item"><span className="vg-lbl">Requirement</span><span className="vg-val">{lead.requirementCategory || "—"}</span></div>
+          <div className="vg-item">
+            <span className="vg-lbl">Requirement</span>
+            <span className="vg-val">
+              {(!lead.requirementCategory || lead.requirementCategory.length === 0) ? (
+                "—"
+              ) : (
+                <div className="vg-chip-wrap">
+                  {lead.requirementCategory.map((cat) => (
+                    <span key={cat} className="vg-chip">{cat}</span>
+                  ))}
+                </div>
+              )}
+            </span>
+          </div>
           <div className="vg-item"><span className="vg-lbl">Status</span><StatusPill status={lead.status} /></div>
           <div className="vg-item"><span className="vg-lbl">Priority</span><PriorityPill priority={lead.priority} /></div>
           <div className="vg-item"><span className="vg-lbl">Follow-up</span><span className="vg-val">{fmtDate(lead.followUpDate)}</span></div>
@@ -718,7 +809,30 @@ const LeadFormModal = ({ date, lead, staffList, onClose, onSave, saving }) => {
   const [docFile, setDocFile] = useState(null);
   const [fileErr, setFileErr] = useState("");
   const [phoneCheck, setPhoneCheck] = useState({ checking: false, exists: false, checked: false, leadPrimeId: null, leadStrId: null, firstName: null, lastName: null });
+  const [reqCatOpen, setReqCatOpen] = useState(false);
+  const reqCatRef = useRef(null);
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (reqCatRef.current && !reqCatRef.current.contains(e.target)) {
+        setReqCatOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleRequirementCategory = (cat) => {
+    setForm((prev) => {
+      const list = prev.requirementCategory || [];
+      const exists = list.includes(cat);
+      return {
+        ...prev,
+        requirementCategory: exists ? list.filter((c) => c !== cat) : [...list, cat],
+      };
+    });
+  };
 
   useEffect(() => {
     // Skip check if editing and phone hasn't changed from the lead's own number
@@ -799,12 +913,12 @@ if (phoneCheck.checked && phoneCheck.exists) {
             {errs.firstName && <span className="fe-msg">{errs.firstName}</span>}
           </div>
           <div className="fg">
-            <label>Last Name </label>
+            <label>Last Name</label>
             <input value={form.lastName} placeholder="Mehta" className={errs.lastName ? "fe" : ""} disabled={saving} onChange={(e) => set("lastName", e.target.value)} />
             {/* {errs.lastName && <span className="fe-msg">{errs.lastName}</span>} */}
           </div>
           <div className="fg">
-            <label>Email </label>
+            <label>Email</label>
             <input type="email" value={form.email} placeholder="arjun@company.com" className={errs.email ? "fe" : ""} disabled={saving} onChange={(e) => set("email", e.target.value)} />
             {/* {errs.email && <span className="fe-msg">{errs.email}</span>} */}
           </div>
@@ -818,10 +932,55 @@ if (phoneCheck.checked && phoneCheck.exists) {
             <label>Company</label>
             <input value={form.company} placeholder="Acme Corp" disabled={saving} onChange={(e) => set("company", e.target.value)} />
           </div>
-          <div className="fg">
+                   <div className="fg" ref={reqCatRef} style={{ position: "relative" }}>
             <label>Requirement Category</label>
-            <select value={form.requirementCategory} disabled={saving} onChange={(e) => set("requirementCategory", e.target.value)}>
-              {REQUIREMENT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            <button
+              type="button"
+              className="reqcat-trigger"
+              onClick={() => setReqCatOpen((o) => !o)}
+              disabled={saving}
+            >
+              {(!form.requirementCategory || form.requirementCategory.length === 0)
+                ? "Select categories"
+                : form.requirementCategory.length <= 2
+                  ? form.requirementCategory.join(", ")
+                  : `${form.requirementCategory.length} selected`}
+              <span style={{ float: "right" }}>{reqCatOpen ? "▲" : "▼"}</span>
+            </button>
+
+            {reqCatOpen && (
+              <div className="reqcat-panel">
+                <div className="reqcat-panel-header">
+                  <span>{(form.requirementCategory || []).length} selected</span>
+                  <button
+                    type="button"
+                    className="reqcat-clear"
+                    onClick={() => set("requirementCategory", [])}
+                    disabled={!form.requirementCategory || form.requirementCategory.length === 0}
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="reqcat-list">
+                  {REQUIREMENT_CATEGORIES.map((cat) => (
+                    <label key={cat} className="reqcat-item">
+                      <input
+                        type="checkbox"
+                        checked={(form.requirementCategory || []).includes(cat)}
+                        onChange={() => toggleRequirementCategory(cat)}
+                      />
+                      <span>{cat}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="fg">
+            <label>Source</label>
+            <select value={form.source} disabled={saving} onChange={(e) => set("source", e.target.value)}>
+              {LEAD_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
@@ -1068,7 +1227,7 @@ const BulkEmailOverlay = ({ count, onClose, onSend }) => (
 
 /* ── OVERLAY: Bulk WhatsApp forward — pick a template first, then send ── */
 
-const CALENDAR_API_BASE = "https://crm-api.kunashshowcase.online/api/calendar/v1";
+const CALENDAR_API_BASE = "http://localhost:9090/api/calendar/v1";
 
 /* Calls the backend, which creates a real Google Calendar event with Meet
    conferencing attached (via the connected Google account) and returns the
@@ -1336,7 +1495,7 @@ const Dashboard = () => {
   const [histLead,    setHistLead]    = useState(null);
   const [histData,    setHistData]    = useState([]);
   const [histLoading, setHistLoading] = useState(false);
- const [convertLead, setConvertLead] = useState(null);
+  const [convertLead, setConvertLead] = useState(null);
   const [lostLead,    setLostLead]    = useState(null);
   const [viewLostReason, setViewLostReason] = useState(null);
 
@@ -1567,13 +1726,13 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
   };
 
   /* ── Follow-up flow ── */
-  const handleDoneSubmit = async (lead, note) => {
+    const handleDoneSubmit = async (lead, note, takenByStaffId, meetingType) => {
     setBusyId(lead.leadPrimeId);
     try {
       const res = await fetch(`${API_BASE}/add/${lead.leadPrimeId}/followup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ followupDate: lead.followUpDate, followupStatus: "done", followupNotes: note }),
+        body: JSON.stringify({ followupDate: lead.followUpDate, followupStatus: "done", followupNotes: note, takenByStaffId, meetingType }),
       });
       if (!res.ok) throw new Error(`Failed (${res.status})`);
 
@@ -1589,13 +1748,13 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
     }
   };
 
-  const handleNextFollowupSubmit = async (lead, newDate) => {
+    const handleNextFollowupSubmit = async (lead, newDate, takenByStaffId, meetingType) => {
     setBusyId(lead.leadPrimeId);
     try {
       const res = await fetch(`${API_BASE}/add/${lead.leadPrimeId}/followup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ followupDate: newDate, followupStatus: "pending", followupNotes: `Carried forward to ${fmtDate(newDate)}` }),
+        body: JSON.stringify({ followupDate: newDate, followupStatus: "pending", followupNotes: `Carried forward to ${fmtDate(newDate)}`, takenByStaffId, meetingType }),
       });
       if (!res.ok) throw new Error(`Failed (${res.status})`);
 
@@ -1637,7 +1796,7 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
   };
 
   /* ── Convert + celebration (confetti + clap sound) ── */
-  const CLIENT_API_BASE = "https://crm-api.kunashshowcase.online/api/client/v1";
+  const CLIENT_API_BASE = "http://localhost:9090/api/client/v1";
 
   const handleConvertConfirm = async (lead, amounts) => {
     setBusyId(lead.leadPrimeId);
@@ -1728,7 +1887,7 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
   };
 
 
-   const handleAssignStaffSubmit = async (lead, staffId) => {
+      const handleAssignStaffSubmit = async (lead, staffId) => {
     setBusyId(lead.leadPrimeId);
     try {
       const payload = {
@@ -1742,6 +1901,15 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
       await apiSendLeadForm(`/${lead.leadPrimeId}`, "PATCH", payload, null);
       toast.success(staffId ? "Staff assigned" : "Staff unassigned");
       setAssignStaffLead(null);
+
+      const staffObj = staffId ? staffList.find((s) => s.staffPrimeId === staffId) : null;
+      const assignedStaffName = staffObj ? `${staffObj.staffFirstName} ${staffObj.staffLastName}` : "";
+      setDayOverlay((ov) => ov
+        ? { ...ov, leads: ov.leads.map((x) => x.leadPrimeId === lead.leadPrimeId
+            ? { ...x, assignedStaffId: staffId, assignedStaffName }
+            : x) }
+        : ov);
+
       await fetchLeads();
     } catch (err) {
       console.error("Assign staff failed:", err);
@@ -1802,7 +1970,7 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
 
   return (
     <div className="root-dashboard">
-      {/* <ToastContainer position="top-right" autoClose={2500} theme="light" /> */}
+      <ToastContainer position="top-right" autoClose={2500} theme="light" />
       <nav className="dash-nav">
         <div className="nav-brand">
           <span className="font-mono text-sm font-thin text-gray-600">Hey! Let's make it happen :)</span>
@@ -2024,7 +2192,7 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
       </div>
 
       {/* ── MODALS / OVERLAYS ── */}
-      {dayOverlay && (
+            {dayOverlay && (
         <DayLeadsOverlay
           date={dayOverlay.date}
           leads={dayOverlay.leads}
@@ -2036,6 +2204,7 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
           onNextFollowup={setNextLead}
           onHistory={openHistory}
           onDoc={openDoc}
+          onAssignStaff={setAssignStaffLead}
         />
       )}
        {(editLead || addingNew) && (
@@ -2048,8 +2217,9 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
         />
       )}
       {viewLead    && <LeadDetailOverlay lead={viewLead} onClose={() => setViewLead(null)} onDoc={openDoc} />}
-      {doneLead    && <DoneOverlay lead={doneLead} saving={busyId === doneLead.leadPrimeId} onClose={() => setDoneLead(null)} onSubmit={handleDoneSubmit} />}
-      {nextLead    && <NextFollowupOverlay lead={nextLead} saving={busyId === nextLead.leadPrimeId} onClose={() => setNextLead(null)} onSubmit={handleNextFollowupSubmit} />}
+      {doneLead    && <DoneOverlay lead={doneLead} staffList={staffList} saving={busyId === doneLead.leadPrimeId} onClose={() => setDoneLead(null)} onSubmit={handleDoneSubmit} />}
+      {nextLead    && <NextFollowupOverlay lead={nextLead} staffList={staffList} saving={busyId === nextLead.leadPrimeId} onClose={() => setNextLead(null)} onSubmit={handleNextFollowupSubmit} />}      
+      
       {histLead    && <HistoryOverlay lead={histLead} history={histData} loading={histLoading} onClose={() => { setHistLead(null); setHistData([]); }} />}
       {convertLead && <ConvertOverlay lead={convertLead} saving={busyId === convertLead.leadPrimeId} onClose={() => setConvertLead(null)} onConfirm={handleConvertConfirm} />}
       {lostLead    && <LostOverlay lead={lostLead} saving={busyId === lostLead.leadPrimeId} onClose={() => setLostLead(null)} onSubmit={handleLostSubmit} />}

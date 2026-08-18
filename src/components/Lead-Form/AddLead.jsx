@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const API_BASE = "https://crm-api.kunashshowcase.online/api/lead/v1"; // adjust if your backend runs on a different origin, e.g. http://localhost:8080/api/lead/v1
+const API_BASE = "https://crm-api.kunashshowcase.online/api/lead/v1";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -21,7 +21,7 @@ const PRIORITY_CFG = {
   P3: { color: "#3b82f6", label: "Low" },
 };
 
-const LEAD_SOURCES = ["Website", "Referral", "Cold Call", "LinkedIn", "Event", "WhatsApp", "Inbound Email", "Other"];
+const LEAD_SOURCES = ["Website", "Referral", "Cold Call", "LinkedIn", "Event", "WhatsApp", "Inbound Email", "Other","Meta Adds"];
 
 const REQUIREMENT_CATEGORIES = [
   "Website Design",
@@ -30,7 +30,8 @@ const REQUIREMENT_CATEGORIES = [
   "Landing Page",
   "Google Ads",
   "Meta Ads",
-  "LinkedIn Marketing",
+  "Linkedln Marketing (organically)",
+  "Linkedln Marketing (paid adds)",
   "SEO",
   "Social Media Marketing",
   "Graphic Design",
@@ -48,13 +49,13 @@ const EMPTY_LEAD = {
   email: "",
   phone: "",
   company: "",
-  status: "warm",
-  priority: "P2",
+  status: "hot",
+  priority: "P1",
   followUpDate: "",
   followupStatus: "pending",
   notes: "",
   source: "Website",
-  requirementCategory: REQUIREMENT_CATEGORIES[0],
+  requirementCategory: [],
   tags: "",
   assignedStaffId: "",
 };
@@ -68,7 +69,9 @@ const AddLead = () => {
   const [attachments, setAttachments] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [phoneCheck, setPhoneCheck] = useState({ checking: false, exists: false, checkedFor: "", existingLead: null });
-  
+  const [reqCatOpen, setReqCatOpen] = useState(false);
+  const reqCatRef = useRef(null);
+
   const [showBulkOverlay, setShowBulkOverlay] = useState(false);
   const [bulkFile, setBulkFile] = useState(null);
   const [bulkUploading, setBulkUploading] = useState(false);
@@ -126,6 +129,28 @@ const AddLead = () => {
       if (phoneCheckTimer.current) clearTimeout(phoneCheckTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (reqCatRef.current && !reqCatRef.current.contains(e.target)) {
+        setReqCatOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleRequirementCategory = (cat) => {
+    setForm((prev) => {
+      const exists = prev.requirementCategory.includes(cat);
+      return {
+        ...prev,
+        requirementCategory: exists
+          ? prev.requirementCategory.filter((c) => c !== cat)
+          : [...prev.requirementCategory, cat],
+      };
+    });
+  };
 
    const checkPhoneExists = async (phone) => {
     const trimmed = phone.trim();
@@ -452,7 +477,7 @@ const exportBulkResultToWord = () => {
                   className={errors.lastName ? "error" : ""}
                   disabled={isSaving}
                 />
-                {/* {errors.lastName && <span className="error-msg">{errors.lastName}</span>} */}
+                {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
               </div>
 
               <div className="fg">
@@ -466,7 +491,7 @@ const exportBulkResultToWord = () => {
                   className={errors.email ? "error" : ""}
                   disabled={isSaving}
                 />
-                {/* {errors.email && <span className="error-msg">{errors.email}</span>} */}
+                {errors.email && <span className="error-msg">{errors.email}</span>}
               </div>
 
               <div className="fg">
@@ -555,25 +580,61 @@ const exportBulkResultToWord = () => {
                 </select>
               </div>
 
-              <div className="fg">
+                            <div className="fg" ref={reqCatRef} style={{ position: "relative" }}>
                 <label>Requirement Category</label>
-                <select name="requirementCategory" value={form.requirementCategory} onChange={handleChange} disabled={isSaving}>
-                  {REQUIREMENT_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                <button
+                  type="button"
+                  className="reqcat-trigger"
+                  onClick={() => setReqCatOpen((o) => !o)}
+                  disabled={isSaving}
+                >
+                  {form.requirementCategory.length === 0
+                    ? "Select categories"
+                    : form.requirementCategory.length <= 2
+                      ? form.requirementCategory.join(", ")
+                      : `${form.requirementCategory.length} selected`}
+                  <span style={{ float: "right" }}>{reqCatOpen ? "▲" : "▼"}</span>
+                </button>
+
+                {reqCatOpen && (
+                  <div className="reqcat-panel">
+                    <div className="reqcat-panel-header">
+                      <span>{form.requirementCategory.length} selected</span>
+                      <button
+                        type="button"
+                        className="reqcat-clear"
+                        onClick={() => setForm((prev) => ({ ...prev, requirementCategory: [] }))}
+                        disabled={form.requirementCategory.length === 0}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="reqcat-list">
+                      {REQUIREMENT_CATEGORIES.map((cat) => (
+                                                <label key={cat} className="reqcat-item">
+                          <input
+                            type="checkbox"
+                            checked={form.requirementCategory.includes(cat)}
+                            onChange={() => toggleRequirementCategory(cat)}
+                          />
+                          <span>{cat}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="fg">
                 <label>Assign Staff</label>
-                    <select
+                <select
                   name="assignedStaffId"
                   value={form.assignedStaffId}
                   onChange={handleChange}
                   disabled={isSaving}
                 >
                   <option value="">Unassigned</option>
-                  {Array.isArray(staffList) && staffList.map(s => (
+                  {staffList.map(s => (
                     <option key={s.staffPrimeId} value={s.staffPrimeId}>
                       {s.staffFirstName} {s.staffLastName} ({s.staffRole})
                     </option>
