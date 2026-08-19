@@ -126,7 +126,7 @@ const rel = (offset) => {
 const EMPTY_FORM = {
   firstName:"", lastName:"", email:"", phone:"", company:"",
   status:"warm", priority:"P2", notes:"", followUpDate:"", followupStatus:"pending",
-  requirementCategory: [], source:"Website", tags:"",
+  requirementCategory: [], source:"Website", referralDetails:"", tags:"",
   assignedStaffId: "",
 };
 
@@ -444,7 +444,7 @@ const DayLeadsOverlay = ({ date, leads, onClose, onView, onEdit, onDone, onNextF
       <div className="tbl-scroll">
         <table className="lead-tbl day-ov-tbl">
           <thead>
-            <tr className="sticky top-0">
+            <tr className="sticky top-0 z-50">
               <th>First Name</th><th>Last Name</th><th>Mobile</th><th>Company</th>
               <th>Requirement</th><th>Priority</th><th>Follow-up Date</th><th>Note</th>
               <th>Status</th><th>Assigned</th><th className="action-th">Actions</th>
@@ -752,11 +752,15 @@ const LeadDetailOverlay = ({ lead, onClose, onDoc }) => (
           <div className="vg-item"><span className="vg-lbl">Company</span><span className="vg-val">{lead.company || "—"}</span></div>
         </div>
       </div>
+      
       <div className="vg-section">
         <p className="vg-section-title">Lead Details</p>
         <div className="vg-grid">
-          <div className="vg-item">
-            <span className="vg-lbl">Requirement</span>
+          <div className="vg-item"><span className="vg-lbl">Source</span><span className="vg-val">{lead.source || "—"}</span></div>
+          {lead.source === "Referral" && (
+            <div className="vg-item"><span className="vg-lbl">Referral Details</span><span className="vg-val">{lead.referralDetails || "—"}</span></div>
+          )}
+          <div className="vg-item"><span className="vg-lbl">Requirement</span>
             <span className="vg-val">
               {(!lead.requirementCategory || lead.requirementCategory.length === 0) ? (
                 "—"
@@ -977,12 +981,23 @@ if (phoneCheck.checked && phoneCheck.exists) {
             )}
           </div>
 
-          <div className="fg">
+                    <div className="fg">
             <label>Source</label>
             <select value={form.source} disabled={saving} onChange={(e) => set("source", e.target.value)}>
               {LEAD_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+          {form.source === "Referral" && (
+            <div className="fg">
+              <label>Referral Details</label>
+              <input
+                type="text"
+                value={form.referralDetails || ""}
+                placeholder="e.g. Referred by Priya Sharma"
+                disabled={saving}
+                onChange={(e) => set("referralDetails", e.target.value)}
+              />
+            </div> )}
 
           <div className="fg">
             <label>Assign Staff</label>
@@ -1667,6 +1682,7 @@ const activeList = activeTab === "pipeline" ? pipelineLeads : activeTab === "nex
       const payload = {
         firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone,
         company: form.company, status: form.status, priority: form.priority, source: form.source || "Website",
+        referralDetails: form.source === "Referral" ? (form.referralDetails || "") : "",
         requirementCategory: form.requirementCategory, tags: form.tags || "",
         followUpDate: form.followUpDate, followupStatus: form.followupStatus || "pending",
         notes: form.notes, leadConverted: false,

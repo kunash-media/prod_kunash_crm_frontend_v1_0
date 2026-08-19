@@ -55,6 +55,7 @@ const EMPTY_LEAD = {
   followupStatus: "pending",
   notes: "",
   source: "Website",
+  referralDetails: "",
   requirementCategory: [],
   tags: "",
   assignedStaffId: "",
@@ -363,6 +364,7 @@ const exportBulkResultToWord = () => {
         status: form.status,
         priority: form.priority,
         source: form.source,
+        referralDetails: form.source === "Referral" ? form.referralDetails : "",
         requirementCategory: form.requirementCategory,
         tags: form.tags,
         followUpDate: form.followUpDate,
@@ -571,7 +573,7 @@ const exportBulkResultToWord = () => {
                 </div>
               </div>
 
-              <div className="fg">
+            <div className="fg">
                 <label>Source</label>
                 <select name="source" value={form.source} onChange={handleChange} disabled={isSaving}>
                   {LEAD_SOURCES.map(src => (
@@ -580,7 +582,21 @@ const exportBulkResultToWord = () => {
                 </select>
               </div>
 
-                            <div className="fg" ref={reqCatRef} style={{ position: "relative" }}>
+              {form.source === "Referral" && (
+                <div className="fg">
+                  <label>Referral Details</label>
+                  <input
+                    type="text"
+                    name="referralDetails"
+                    value={form.referralDetails}
+                    onChange={handleChange}
+                    placeholder="Referred by..."
+                    disabled={isSaving}
+                  />
+                </div>
+              )}
+
+              <div className="fg" ref={reqCatRef} style={{ position: "relative" }}>
                 <label>Requirement Category</label>
                 <button
                   type="button"

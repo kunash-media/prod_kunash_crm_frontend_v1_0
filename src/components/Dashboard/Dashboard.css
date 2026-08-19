@@ -613,7 +613,7 @@ input, select, textarea { font-family: var(--ff-body); }
 /* Table */
 .tbl-scroll {
   overflow: auto;
-  max-height: 330px;
+  max-height: 300px;
   border-radius: var(--r-md);
   border: 1px solid #f49c79d2;
 }
